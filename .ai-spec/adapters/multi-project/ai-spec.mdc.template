@@ -1,0 +1,14 @@
+---
+description: Route this multi-project parent to the selected child SpecForge rules
+alwaysApply: true
+---
+
+This directory is a lightweight SpecForge parent, not the default code repository.
+
+For any task, read `.specforge.json`, select the target child project from `projects[]`, then use the selected child project's `.ai-spec/` as the rule source of truth.
+
+In the selected child project, read `.ai-spec/business/quick-ref.md` first. Read `.ai-spec/AI-START.md` only when quick-ref is not `GENERATED`, or for onboarding, initialization, or a full audit.
+
+Git, commit, and remote submission default to the selected child repository only. Do not commit or push parent `.specforge.json` or parent entry files unless the user separately confirms parent submission.
+
+Respond in Simplified Chinese by default.

@@ -1,0 +1,9 @@
+# {{PROJECT_NAME}} · AI 协作入口
+
+日常任务先读取 `{{AI_SPEC_PATH}}/business/quick-ref.md`；仅当其状态不是 `GENERATED`，或用户要求接入、初始化、完整审计时，才读取 `{{AI_SPEC_PATH}}/AI-START.md`。按门禁加载适用规则和当前计划，轻量读取不得降低验证要求。
+
+默认使用简体中文；不得因代码或文档为英文而自行切换语言。
+
+项目画像位于 `{{AI_SPEC_PATH}}/ai-spec.yaml`。不存在时只生成识别报告和配置草案，不把推断写成事实。
+
+规则正文以 `{{AI_SPEC_PATH}}/` 为准。本文件只负责 Claude Code 自动发现，不复制规范正文。按任务使用 `product-architect`、`dev-implementation`、`code-reviewer`、`debugger`、`spec-evaluator`。

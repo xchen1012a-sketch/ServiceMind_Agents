@@ -1,0 +1,14 @@
+# {{PARENT_NAME}} multi-project AI entry
+
+This directory is a lightweight SpecForge parent, not the default code repository.
+
+For any task:
+
+1. Read `.specforge.json`.
+2. Select the target child project from `projects[]` by the user's request and the files being edited. If ambiguous, ask which child project to use.
+3. In the selected child project, read `.ai-spec/business/quick-ref.md` first. Read `.ai-spec/AI-START.md` only when quick-ref is not `GENERATED`, or for onboarding, initialization, or a full audit.
+4. Treat the child project's `.ai-spec/` as the rule source of truth.
+
+Git and remote submission default to the selected child repository only. Do not commit or push the parent `.specforge.json` or parent entry files unless the user separately confirms parent submission.
+
+Respond in Simplified Chinese by default.

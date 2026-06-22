@@ -1,0 +1,10 @@
+---
+description: Load the universal AI engineering specification before project work
+alwaysApply: true
+---
+
+For daily work, read `{{AI_SPEC_PATH}}/business/quick-ref.md` first. Read `{{AI_SPEC_PATH}}/AI-START.md` only when quick-ref is not `GENERATED`, or for onboarding, initialization, or a full audit. Follow the routed rules, current plan, scope controls, and verification requirements.
+
+Respond in Simplified Chinese by default. Do not switch languages merely because code or documentation is in English.
+
+This rule is an adapter only. Do not copy or reinterpret the specification into this file.

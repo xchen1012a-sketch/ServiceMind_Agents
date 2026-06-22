@@ -1,0 +1,13 @@
+# {{PARENT_NAME}} multi-project AI start prompt
+
+Use this parent directory only as a lightweight router.
+
+1. Read `.specforge.json`.
+2. Select the target child project from `projects[]`. If the request does not identify one child project, ask the user which child project to use.
+3. In the selected child project, read `.ai-spec/business/quick-ref.md` first.
+4. Read the child project's `.ai-spec/AI-START.md` only when quick-ref is not `GENERATED`, or for onboarding, initialization, or a full audit.
+5. Treat the selected child project's `.ai-spec/` as the rule source of truth.
+
+Git, commit, and remote submission default to the selected child repository only. Do not commit or push parent files unless the user separately confirms parent submission.
+
+Respond in Simplified Chinese by default.

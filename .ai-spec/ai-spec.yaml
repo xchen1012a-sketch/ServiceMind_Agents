@@ -1,0 +1,90 @@
+specVersion: 2
+
+spec:
+  scope: project-only
+  multiProjectId: null
+  templateVersion: 2
+
+project:
+  name: ServiceMind Agents
+  description: 企业工单与知识库多 Agent 处理平台，覆盖工单接入、LangGraph 编排、RAG、MCP 工具、人工审批、AgentOps 观测和离线评估。
+  stage: new
+  type: ai-llm
+  criticality: high
+
+stack:
+  languages:
+    - Python
+    - TypeScript
+  frameworks:
+    - FastAPI
+    - React
+    - LangGraph
+    - MCP Python SDK
+  databases:
+    - PostgreSQL
+    - pgvector
+    - Redis
+  packageManagers:
+    - uv
+    - pnpm
+
+commands:
+  build: null
+  test: null
+  lint: null
+  typecheck: null
+  run: null
+
+workflow:
+  branchModel: project-defined
+  mainBranch: main
+  integrationBranch: null
+  requirePlanForComplexTasks: true
+  requireContractForCrossBoundaryChanges: true
+
+quality:
+  coverageTarget: project-defined
+  securityGate: required
+  fullTestSuiteOnEveryChange: false
+
+context:
+  projectSize: medium
+  mode: auto
+  dailyEntry: business/quick-ref.md
+  quickRefStatus: GENERATED
+  quickRefMaxLines: 80
+  preferLiteCore: true
+  dynamicRouting: true
+  allowFullScanByDefault: false
+  requireContextUsageReport: true
+  maintenance:
+    enabled: true
+    strategy: lazy
+    autoApply: safe-only
+    intervalDaysBySize: { tiny: 30, small: 30, medium: 14, large: 7, enterprise: 7 }
+    quickRefMaxLines: 80
+    currentPlanMaxLines: 80
+    singleReadMaxLines: 250
+  projectSizeSignals:
+    fileCount: 0
+    buildFileCount: 0
+    hasDatabase: true
+    hasApi: true
+    hasAuth: true
+    hasCi: false
+    multiProject: true
+
+ai:
+  tools:
+    - codex
+    - generic
+  specPath: .ai-spec
+  outputLanguage:
+    default: zh-CN
+    locked: true
+    overrideOnlyByExplicitUserRequest: true
+  skillPolicy:
+    mode: project-first
+    allowLocalSkills: true
+    reportSkillSource: true

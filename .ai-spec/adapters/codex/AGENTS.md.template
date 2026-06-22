@@ -1,0 +1,9 @@
+# {{PROJECT_NAME}} · AI 协作入口
+
+For daily tasks, read `{{AI_SPEC_PATH}}/business/quick-ref.md` first. Read `{{AI_SPEC_PATH}}/AI-START.md` only when quick-ref is not `GENERATED`, or for onboarding, initialization, or a full audit. Load applicable rules and the current plan through the gate; lightweight context must not weaken verification.
+
+Respond in Simplified Chinese by default. Do not switch languages merely because code or documentation is in English.
+
+Use `{{AI_SPEC_PATH}}/ai-spec.yaml` as the project profile when present. Do not convert inferred information into project facts without confirmation.
+
+This file exists only for Codex instruction discovery. The specification source of truth remains under `{{AI_SPEC_PATH}}/`. Use the shared skills when applicable: `product-architect`, `dev-implementation`, `code-reviewer`, `debugger`, `spec-evaluator`.
