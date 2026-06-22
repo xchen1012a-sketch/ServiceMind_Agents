@@ -2,17 +2,28 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class StrictInputModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class AgentRunStartInput(StrictInputModel):
+    pass
 
 
 class AgentRunStart(BaseModel):
     tenant_id: uuid.UUID
 
 
-class AgentRunResume(BaseModel):
-    tenant_id: uuid.UUID
+class AgentRunResumeInput(StrictInputModel):
     decision: Literal["approved", "rejected"] = "approved"
     decision_reason: str | None = None
+
+
+class AgentRunResume(AgentRunResumeInput):
+    tenant_id: uuid.UUID
     decided_by_user_id: uuid.UUID | None = None
 
 
@@ -43,3 +54,4 @@ class AgentRunRead(BaseModel):
     error_code: str | None
     error_message: str | None
     steps: list[AgentRunStepRead]
+    citations: list[dict] = Field(default_factory=list)

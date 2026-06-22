@@ -1,27 +1,72 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.modules.input_security import validate_business_text
 
 
-class TicketCreate(BaseModel):
-    tenant_id: uuid.UUID
+class StrictInputModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+TicketCategoryCode = Literal["general", "billing", "technical", "account", "order", "refund"]
+TicketPriority = Literal["low", "medium", "high", "urgent"]
+TicketRiskLevel = Literal["low", "medium", "high", "critical"]
+TicketSourceChannel = Literal["web", "email", "chat", "phone", "api"]
+TicketStatusValue = Literal[
+    "new",
+    "triaged",
+    "in_progress",
+    "waiting_customer",
+    "resolved",
+    "closed",
+    "reopened",
+    "cancelled",
+]
+
+
+class TicketCreateInput(StrictInputModel):
     title: str = Field(min_length=1, max_length=200)
-    description_text: str = Field(min_length=1)
-    category_code: str = Field(default="general", min_length=1, max_length=80)
-    priority: str = Field(default="medium", min_length=1, max_length=40)
-    risk_level: str = Field(default="low", min_length=1, max_length=40)
-    source_channel: str = Field(default="web", min_length=1, max_length=40)
+    description_text: str = Field(min_length=1, max_length=20_000)
+    category_code: TicketCategoryCode = "general"
+    priority: TicketPriority = "medium"
+    risk_level: TicketRiskLevel = "low"
+    source_channel: TicketSourceChannel = "web"
     requester_name: str | None = Field(default=None, max_length=160)
     requester_contact: str | None = Field(default=None, max_length=240)
-    created_by_user_id: uuid.UUID | None = None
-    initial_message_text: str | None = None
+    initial_message_text: str | None = Field(default=None, max_length=20_000)
+
+    @field_validator(
+        "title",
+        "description_text",
+        "requester_name",
+        "requester_contact",
+        "initial_message_text",
+    )
+    @classmethod
+    def validate_text_fields(cls, value: str | None) -> str | None:
+        return validate_business_text(value)
 
 
-class TicketStatusChange(BaseModel):
+class TicketCreate(TicketCreateInput):
     tenant_id: uuid.UUID
-    to_status: str = Field(min_length=1, max_length=40)
-    reason_text: str | None = None
+    created_by_user_id: uuid.UUID | None = None
+
+
+class TicketStatusChangeInput(StrictInputModel):
+    to_status: TicketStatusValue
+    reason_text: str | None = Field(default=None, max_length=2_000)
+
+    @field_validator("reason_text")
+    @classmethod
+    def validate_reason_text(cls, value: str | None) -> str | None:
+        return validate_business_text(value)
+
+
+class TicketStatusChange(TicketStatusChangeInput):
+    tenant_id: uuid.UUID
     changed_by_type: str = Field(default="user", min_length=1, max_length=40)
     changed_by_user_id: uuid.UUID | None = None
 

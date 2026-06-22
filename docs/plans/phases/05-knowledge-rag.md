@@ -1,7 +1,7 @@
 # 阶段计划：05 知识库 RAG
 
 - **所属总计划**：`../project-plan.md`
-- **完成状态**：in-progress
+- **完成状态**：completed
 - **更新时间**：2026-06-22
 
 ## 阶段目标
@@ -15,6 +15,8 @@
 - 新增确定性本地 embedding provider，写入 `embedding_models` 与 `chunk_embeddings`，重复调用保持幂等。
 - 新增检索接口，基于确定性 embedding 计算相似度并返回 ranked chunk。
 - 写入 `rag_queries` 与 `rag_retrieval_hits`，保存检索参数、rank、score、chunk 命中。
+- Agent 生成摘要前接入知识库检索，新增 `retrieve_knowledge` run step。
+- Agent 回复和 `generate_summary` step payload 返回 document、version、chunk、rank、score 与 source anchor 引用来源。
 - 新增 API：
   - `POST /api/v1/knowledge/spaces`
   - `POST /api/v1/knowledge/documents/import`
@@ -28,7 +30,7 @@
 - [x] 文档可导入并生成 chunk。
 - [x] chunk embedding 可写入。
 - [x] chunk embedding 可检索。
-- [ ] Agent 回复包含引用来源。
+- [x] Agent 回复包含引用来源。
 - [x] RAG 查询和命中结果可审计。
 
 ## 验证记录
@@ -55,12 +57,15 @@
   - PostgreSQL smoke（`SERVICEMIND_RUN_POSTGRES_SMOKE=1`）：
     - `.\.venv\Scripts\alembic upgrade head`：passed。
     - `.\.venv\Scripts\python -m pytest tests`：35 passed。
+- 2026-06-22 Agent 引用来源小步：
+  - `.\.venv\Scripts\python -m pytest tests/agent tests/knowledge/test_knowledge_service.py`：18 passed, 1 skipped。
+  - `.\.venv\Scripts\python -m pytest tests`：33 passed, 3 skipped。
+  - `.\.venv\Scripts\python -m ruff check app tests alembic`：passed。
+  - 本轮未执行 PostgreSQL smoke；相关测试仍需 `SERVICEMIND_RUN_POSTGRES_SMOKE=1` 和可用 PostgreSQL/pgvector。
 
 ## 下一步
 
-1. 将 Agent 运行链路接入检索命中与引用来源。
-2. 在 Agent 回复中返回 document、version、chunk、rank、score 等引用信息。
-3. 补充 Agent + RAG 联动测试和 PostgreSQL smoke。
+1. 进入阶段 06，开始 MCP mock 工具服务、高风险工具审批和审批后执行记录。
 
 ## 风险与约束
 

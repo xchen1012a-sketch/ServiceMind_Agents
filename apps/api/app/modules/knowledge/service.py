@@ -279,7 +279,7 @@ class KnowledgeService:
                 rank_no=rank_no,
                 similarity_score=Decimal(f"{score:.6f}"),
                 rerank_score=None,
-                used_in_answer=False,
+                used_in_answer=payload.used_in_answer,
                 created_at=now,
             )
             self.repository.add_rag_retrieval_hit(rag_hit)

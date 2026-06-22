@@ -144,9 +144,9 @@
 | 02 工程模板二开与基础服务 | completed | `phases/02-engineering-foundation.md` |
 | 03 工单与状态流转 | completed | `phases/03-ticket-workflow.md` |
 | 04 LangGraph Agent 主流程 | completed | `phases/04-langgraph-runtime.md` |
-| 05 知识库 RAG | in-progress | `phases/05-knowledge-rag.md` |
-| 06 MCP 工具与审批 | planned | `phases/06-mcp-approval.md` |
-| 07 AgentOps 前端 | planned | `phases/07-agentops-ui.md` |
+| 05 知识库 RAG | completed | `phases/05-knowledge-rag.md` |
+| 06 MCP 工具与审批 | completed | `phases/06-mcp-approval.md` |
+| 07 AgentOps 前端 | in-progress | `phases/07-agentops-ui.md` |
 | 08 评估系统与项目收口 | planned | `phases/08-evaluation-release.md` |
 
 ## 阶段依赖
@@ -192,3 +192,6 @@
 - 2026-06-22：完成阶段 05 第一小步；原因：知识库空间、纯文本文档导入、版本和 chunk 持久化已形成最小闭环，并通过服务层、路由层和 PostgreSQL smoke；影响范围：API、Knowledge 模块、测试、阶段状态；同步文件：`current.md`、`phases/05-knowledge-rag.md`、`apps/api/README.md`。
 - 2026-06-22：完成阶段 05 embedding 写入小步；原因：确定性本地 embedding provider 已可写入 `embedding_models` 和 `chunk_embeddings`，并通过 pgvector PostgreSQL smoke；影响范围：API、Knowledge 模块、测试、阶段状态；同步文件：`current.md`、`phases/05-knowledge-rag.md`、`apps/api/README.md`。
 - 2026-06-22：完成阶段 05 检索审计小步；原因：知识库检索接口已基于确定性 embedding 返回 ranked chunk，并写入 `rag_queries` 与 `rag_retrieval_hits`；影响范围：API、Knowledge 模块、测试、阶段状态；同步文件：`current.md`、`phases/05-knowledge-rag.md`、`apps/api/README.md`。
+- 2026-06-22：完成阶段 05 并启动阶段 06；原因：Agent 生成摘要前已接入 RAG 检索，`retrieve_knowledge` step、`rag_queries` / `rag_retrieval_hits` 关联和 Agent 回复引用来源已落地；影响范围：API、Agent 模块、Knowledge 模块、测试、阶段状态；同步文件：`current.md`、`phases/05-knowledge-rag.md`、`phases/06-mcp-approval.md`、`apps/api/README.md`。
+- 2026-06-22：补强公开输入和数据权限边界；原因：工单与知识库入口需要业务白名单、自由文本边界、存储型来源 URI 限制和前端上下文头契约，避免用户输入污染业务状态、RAG 检索和审计字段；影响范围：API/DTO、权限上下文、Web 工单工作台、测试；同步文件：`current.md`、`phases/06-mcp-approval.md`。
+- 2026-06-22：完成阶段 06 并启动阶段 07；原因：mock MCP 工具、tool call 审计、高风险审批请求、审批决策和批准后执行记录已形成后端闭环，Agent 高风险暂停已关联 tool call 与 approval request；影响范围：API、Agent 模块、MCP tools 模块、Approval 模块、测试、阶段状态；同步文件：`current.md`、`phases/06-mcp-approval.md`、`phases/07-agentops-ui.md`、`apps/api/README.md`。

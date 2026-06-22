@@ -3,6 +3,12 @@ from datetime import UTC, datetime
 
 from app.models import AgentRun, AgentRunStep, Ticket
 from app.modules.agent.runtime import RuntimeResult, RuntimeStep
+from app.modules.knowledge.schemas import (
+    KnowledgeChunkRead,
+    KnowledgeSearchHitRead,
+    KnowledgeSearchRequest,
+    KnowledgeSearchResponse,
+)
 
 
 class InMemoryAgentRepository:
@@ -99,6 +105,22 @@ class StaticRuntime:
         return self.result
 
 
+class StaticKnowledgeSearchService:
+    def __init__(self, hits: list[KnowledgeSearchHitRead] | None = None) -> None:
+        self.hits = hits if hits is not None else [make_search_hit()]
+        self.requests: list[KnowledgeSearchRequest] = []
+
+    def search(self, payload: KnowledgeSearchRequest) -> KnowledgeSearchResponse:
+        self.requests.append(payload)
+        return KnowledgeSearchResponse(
+            tenant_id=payload.tenant_id,
+            rag_query_id=uuid.uuid4(),
+            query_text=payload.query_text,
+            retrieval_params_json={"top_k": payload.top_k},
+            hits=self.hits,
+        )
+
+
 def make_ticket(tenant_id: uuid.UUID | None = None, **overrides: str) -> Ticket:
     now = datetime.now(UTC)
     return Ticket(
@@ -114,4 +136,32 @@ def make_ticket(tenant_id: uuid.UUID | None = None, **overrides: str) -> Ticket:
         source_channel=overrides.get("source_channel", "web"),
         created_at=now,
         updated_at=now,
+    )
+
+
+def make_search_hit(**overrides: object) -> KnowledgeSearchHitRead:
+    now = datetime.now(UTC)
+    chunk_id = overrides.get("chunk_id", uuid.uuid4())
+    return KnowledgeSearchHitRead(
+        id=overrides.get("id", uuid.uuid4()),
+        chunk_id=chunk_id,
+        document_id=overrides.get("document_id", uuid.uuid4()),
+        document_version_id=overrides.get("document_version_id", uuid.uuid4()),
+        document_title=overrides.get("document_title", "Refund policy"),
+        source_uri=overrides.get("source_uri", "manual://refund-policy"),
+        rank_no=overrides.get("rank_no", 1),
+        similarity_score=overrides.get("similarity_score", 0.98),
+        used_in_answer=overrides.get("used_in_answer", True),
+        chunk=KnowledgeChunkRead(
+            id=chunk_id,
+            chunk_index=overrides.get("chunk_index", 0),
+            chunk_text=overrides.get("chunk_text", "Refunds require an order id."),
+            token_count=overrides.get("token_count", 6),
+            heading_path=overrides.get("heading_path", "Refunds"),
+            page_number=None,
+            source_anchor=overrides.get("source_anchor", "chunk:0"),
+            metadata_json=None,
+            created_at=now,
+        ),
+        created_at=now,
     )

@@ -8,8 +8,8 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     environment: str = "local"
     cors_origins: list[str] = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
+        "http://localhost:15174",
+        "http://127.0.0.1:15174",
     ]
     database_url: str = (
         "postgresql+psycopg://servicemind:servicemind@localhost:5432/servicemind"

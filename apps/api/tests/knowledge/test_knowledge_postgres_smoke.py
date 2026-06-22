@@ -27,7 +27,9 @@ def test_knowledge_import_persists_to_postgresql() -> None:
         pytest.skip("set SERVICEMIND_RUN_POSTGRES_SMOKE=1 to run PostgreSQL smoke test")
 
     tenant_id = uuid.uuid4()
+    user_id = uuid.uuid4()
     tenant_slug = f"smoke-knowledge-{tenant_id.hex}"
+    headers = _auth_headers(tenant_id, user_id, "knowledge:read,knowledge:write")
 
     with SessionLocal() as db:
         db.add(
@@ -44,8 +46,8 @@ def test_knowledge_import_persists_to_postgresql() -> None:
         client = TestClient(app)
         space_response = client.post(
             "/api/v1/knowledge/spaces",
+            headers=headers,
             json={
-                "tenant_id": str(tenant_id),
                 "name": "Smoke KB",
                 "description_text": "PostgreSQL knowledge smoke",
             },
@@ -55,8 +57,8 @@ def test_knowledge_import_persists_to_postgresql() -> None:
 
         import_response = client.post(
             "/api/v1/knowledge/documents/import",
+            headers=headers,
             json={
-                "tenant_id": str(tenant_id),
                 "knowledge_space_id": str(space_id),
                 "title": "Smoke policy",
                 "content_text": "# Smoke policy\n\nFirst paragraph.\n\nSecond paragraph.",
@@ -69,13 +71,14 @@ def test_knowledge_import_persists_to_postgresql() -> None:
 
         embedding_response = client.post(
             f"/api/v1/knowledge/documents/{document_id}/embeddings",
-            json={"tenant_id": str(tenant_id)},
+            headers=headers,
+            json={},
         )
         assert embedding_response.status_code == 201
         search_response = client.post(
             "/api/v1/knowledge/search",
+            headers=headers,
             json={
-                "tenant_id": str(tenant_id),
                 "query_text": "smoke policy paragraph",
                 "top_k": 5,
                 "knowledge_space_id": str(space_id),
@@ -163,3 +166,11 @@ def test_knowledge_import_persists_to_postgresql() -> None:
             db.execute(delete(KnowledgeSpace).where(KnowledgeSpace.tenant_id == tenant_id))
             db.execute(delete(Tenant).where(Tenant.id == tenant_id, Tenant.slug == tenant_slug))
             db.commit()
+
+
+def _auth_headers(tenant_id: uuid.UUID, user_id: uuid.UUID, permissions: str) -> dict[str, str]:
+    return {
+        "X-ServiceMind-Tenant-Id": str(tenant_id),
+        "X-ServiceMind-User-Id": str(user_id),
+        "X-ServiceMind-Permissions": permissions,
+    }

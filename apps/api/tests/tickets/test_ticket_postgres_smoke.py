@@ -17,7 +17,9 @@ def test_ticket_workflow_persists_to_postgresql() -> None:
         pytest.skip("set SERVICEMIND_RUN_POSTGRES_SMOKE=1 to run PostgreSQL smoke test")
 
     tenant_id = uuid.uuid4()
+    user_id = uuid.uuid4()
     tenant_slug = f"smoke-ticket-{tenant_id.hex}"
+    headers = _auth_headers(tenant_id, user_id, "tickets:create,tickets:update")
 
     with SessionLocal() as db:
         db.add(
@@ -34,8 +36,8 @@ def test_ticket_workflow_persists_to_postgresql() -> None:
         client = TestClient(app)
         create_response = client.post(
             "/api/v1/tickets",
+            headers=headers,
             json={
-                "tenant_id": str(tenant_id),
                 "title": "真实库工单冒烟",
                 "description_text": "验证工单、消息和状态事件能写入 PostgreSQL",
                 "category_code": "smoke",
@@ -48,8 +50,8 @@ def test_ticket_workflow_persists_to_postgresql() -> None:
 
         change_response = client.post(
             f"/api/v1/tickets/{ticket_id}/status",
+            headers=headers,
             json={
-                "tenant_id": str(tenant_id),
                 "to_status": "triaged",
                 "reason_text": "PostgreSQL smoke transition",
             },
@@ -84,3 +86,11 @@ def test_ticket_workflow_persists_to_postgresql() -> None:
                 db.execute(delete(Ticket).where(Ticket.id.in_(ticket_ids)))
             db.execute(delete(Tenant).where(Tenant.id == tenant_id, Tenant.slug == tenant_slug))
             db.commit()
+
+
+def _auth_headers(tenant_id: uuid.UUID, user_id: uuid.UUID, permissions: str) -> dict[str, str]:
+    return {
+        "X-ServiceMind-Tenant-Id": str(tenant_id),
+        "X-ServiceMind-User-Id": str(user_id),
+        "X-ServiceMind-Permissions": permissions,
+    }

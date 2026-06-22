@@ -72,7 +72,7 @@ type TicketState =
   | { status: "loading"; tickets: TicketListItem[]; selected: TicketDetail | null; message?: string }
   | { status: "error"; tickets: TicketListItem[]; selected: TicketDetail | null; message: string };
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:18080";
 
 const navItems = [
   { label: "工单工作台", icon: FileText },
@@ -100,6 +100,24 @@ function getInitialTenantId() {
   const generated = crypto.randomUUID();
   localStorage.setItem("servicemind.tenant_id", generated);
   return generated;
+}
+
+function getInitialUserId() {
+  const saved = localStorage.getItem("servicemind.user_id");
+  if (saved) {
+    return saved;
+  }
+  const generated = crypto.randomUUID();
+  localStorage.setItem("servicemind.user_id", generated);
+  return generated;
+}
+
+function contextHeaders(tenantId: string, userId: string, permissions: string) {
+  return {
+    "X-ServiceMind-Tenant-Id": tenantId,
+    "X-ServiceMind-User-Id": userId,
+    "X-ServiceMind-Permissions": permissions,
+  };
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -142,6 +160,7 @@ function useHealth(): HealthState {
 export function App() {
   const health = useHealth();
   const [tenantId, setTenantId] = useState(getInitialTenantId);
+  const [userId] = useState(getInitialUserId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
@@ -171,14 +190,13 @@ export function App() {
   async function loadTickets(nextTenantId = tenantId) {
     setTicketState((current) => ({ ...current, status: "loading" }));
     try {
-      const tickets = await requestJson<TicketListItem[]>(
-        `/api/v1/tickets?tenant_id=${encodeURIComponent(nextTenantId)}`,
-      );
+      const headers = contextHeaders(nextTenantId, userId, "tickets:read");
+      const tickets = await requestJson<TicketListItem[]>("/api/v1/tickets", { headers });
       const selected =
         ticketState.selected && tickets.some((ticket) => ticket.id === ticketState.selected?.id)
-          ? await requestJson<TicketDetail>(
-              `/api/v1/tickets/${ticketState.selected.id}?tenant_id=${encodeURIComponent(nextTenantId)}`,
-            )
+          ? await requestJson<TicketDetail>(`/api/v1/tickets/${ticketState.selected.id}`, {
+              headers,
+            })
           : null;
       setTicketState({ status: "idle", tickets, selected });
     } catch (error) {
@@ -190,9 +208,9 @@ export function App() {
   async function selectTicket(ticketId: string) {
     setTicketState((current) => ({ ...current, status: "loading" }));
     try {
-      const selected = await requestJson<TicketDetail>(
-        `/api/v1/tickets/${ticketId}?tenant_id=${encodeURIComponent(tenantId)}`,
-      );
+      const selected = await requestJson<TicketDetail>(`/api/v1/tickets/${ticketId}`, {
+        headers: contextHeaders(tenantId, userId, "tickets:read"),
+      });
       setTicketState((current) => ({ ...current, status: "idle", selected }));
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
@@ -206,8 +224,8 @@ export function App() {
     try {
       const created = await requestJson<TicketDetail>("/api/v1/tickets", {
         method: "POST",
+        headers: contextHeaders(tenantId, userId, "tickets:create,tickets:read"),
         body: JSON.stringify({
-          tenant_id: tenantId,
           title,
           description_text: description,
           category_code: "general",
@@ -216,9 +234,9 @@ export function App() {
           source_channel: "web",
         }),
       });
-      const tickets = await requestJson<TicketListItem[]>(
-        `/api/v1/tickets?tenant_id=${encodeURIComponent(tenantId)}`,
-      );
+      const tickets = await requestJson<TicketListItem[]>("/api/v1/tickets", {
+        headers: contextHeaders(tenantId, userId, "tickets:read"),
+      });
       setTitle("");
       setDescription("");
       setTicketState({ status: "idle", tickets, selected: created, message: "工单已创建" });
@@ -238,17 +256,16 @@ export function App() {
         `/api/v1/tickets/${ticketState.selected.id}/status`,
         {
           method: "POST",
+          headers: contextHeaders(tenantId, userId, "tickets:update,tickets:read"),
           body: JSON.stringify({
-            tenant_id: tenantId,
             to_status: toStatus,
             reason_text: `frontend transition to ${toStatus}`,
-            changed_by_type: "user",
           }),
         },
       );
-      const tickets = await requestJson<TicketListItem[]>(
-        `/api/v1/tickets?tenant_id=${encodeURIComponent(tenantId)}`,
-      );
+      const tickets = await requestJson<TicketListItem[]>("/api/v1/tickets", {
+        headers: contextHeaders(tenantId, userId, "tickets:read"),
+      });
       setTicketState({ status: "idle", tickets, selected, message: "状态已更新" });
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";

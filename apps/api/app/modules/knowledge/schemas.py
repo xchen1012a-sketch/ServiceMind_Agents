@@ -1,14 +1,34 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.modules.input_security import validate_business_text, validate_stored_source_uri
 
 
-class KnowledgeSpaceCreate(BaseModel):
-    tenant_id: uuid.UUID
+class StrictInputModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+KnowledgeVisibility = Literal["private", "internal", "public"]
+KnowledgeSourceType = Literal["manual", "file_upload", "api_import"]
+KnowledgeMimeType = Literal["text/plain", "text/markdown", "application/json"]
+
+
+class KnowledgeSpaceCreateInput(StrictInputModel):
     name: str = Field(min_length=1, max_length=200)
-    description_text: str | None = None
-    visibility: str = Field(default="private", min_length=1, max_length=40)
+    description_text: str | None = Field(default=None, max_length=4_000)
+    visibility: KnowledgeVisibility = "private"
+
+    @field_validator("name", "description_text")
+    @classmethod
+    def validate_text_fields(cls, value: str | None) -> str | None:
+        return validate_business_text(value)
+
+
+class KnowledgeSpaceCreate(KnowledgeSpaceCreateInput):
+    tenant_id: uuid.UUID
     created_by_user_id: uuid.UUID | None = None
 
 
@@ -24,29 +44,58 @@ class KnowledgeSpaceRead(BaseModel):
     updated_at: datetime
 
 
-class KnowledgeDocumentImport(BaseModel):
-    tenant_id: uuid.UUID
+class KnowledgeDocumentImportInput(StrictInputModel):
     knowledge_space_id: uuid.UUID
     title: str = Field(min_length=1, max_length=240)
-    content_text: str = Field(min_length=1)
-    source_type: str = Field(default="manual", min_length=1, max_length=40)
-    source_uri: str | None = None
-    file_name: str | None = None
-    mime_type: str | None = Field(default="text/plain", max_length=120)
+    content_text: str = Field(min_length=1, max_length=200_000)
+    source_type: KnowledgeSourceType = "manual"
+    source_uri: str | None = Field(default=None, max_length=500)
+    file_name: str | None = Field(default=None, max_length=240)
+    mime_type: KnowledgeMimeType | None = "text/plain"
+
+    @field_validator("title", "content_text", "file_name")
+    @classmethod
+    def validate_text_fields(cls, value: str | None) -> str | None:
+        return validate_business_text(value)
+
+    @field_validator("source_uri")
+    @classmethod
+    def validate_source_uri(cls, value: str | None) -> str | None:
+        return validate_stored_source_uri(value)
+
+
+class KnowledgeDocumentImport(KnowledgeDocumentImportInput):
+    tenant_id: uuid.UUID
     created_by_user_id: uuid.UUID | None = None
+
+
+class KnowledgeDocumentEmbeddingGenerateInput(StrictInputModel):
+    pass
 
 
 class KnowledgeDocumentEmbeddingGenerate(BaseModel):
     tenant_id: uuid.UUID
 
 
-class KnowledgeSearchRequest(BaseModel):
-    tenant_id: uuid.UUID
-    query_text: str = Field(min_length=1)
+class KnowledgeSearchInput(StrictInputModel):
+    query_text: str = Field(min_length=1, max_length=2_000)
     top_k: int = Field(default=5, ge=1, le=20)
     knowledge_space_id: uuid.UUID | None = None
+
+    @field_validator("query_text")
+    @classmethod
+    def validate_query_text(cls, value: str) -> str:
+        validated = validate_business_text(value)
+        if validated is None:
+            raise ValueError("query_text is required")
+        return validated
+
+
+class KnowledgeSearchRequest(KnowledgeSearchInput):
+    tenant_id: uuid.UUID
     agent_run_id: uuid.UUID | None = None
     agent_run_step_id: uuid.UUID | None = None
+    used_in_answer: bool = False
 
 
 class KnowledgeChunkRead(BaseModel):

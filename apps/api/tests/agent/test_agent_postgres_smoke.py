@@ -7,7 +7,16 @@ from sqlalchemy import delete, select
 
 from app.db.session import SessionLocal
 from app.main import app
-from app.models import AgentRun, AgentRunStep, Tenant, Ticket, TicketMessage, TicketStatusEvent
+from app.models import (
+    AgentRun,
+    AgentRunStep,
+    RagQuery,
+    RagRetrievalHit,
+    Tenant,
+    Ticket,
+    TicketMessage,
+    TicketStatusEvent,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -17,7 +26,9 @@ def test_agent_run_persists_to_postgresql() -> None:
         pytest.skip("set SERVICEMIND_RUN_POSTGRES_SMOKE=1 to run PostgreSQL smoke test")
 
     tenant_id = uuid.uuid4()
+    user_id = uuid.uuid4()
     tenant_slug = f"smoke-agent-{tenant_id.hex}"
+    headers = _auth_headers(tenant_id, user_id, "tickets:create,agent:run,agent:approve")
 
     with SessionLocal() as db:
         db.add(
@@ -34,8 +45,8 @@ def test_agent_run_persists_to_postgresql() -> None:
         client = TestClient(app)
         create_response = client.post(
             "/api/v1/tickets",
+            headers=headers,
             json={
-                "tenant_id": str(tenant_id),
                 "title": "真实库 Agent 冒烟",
                 "description_text": "验证 agent_runs 和 agent_run_steps 能写入 PostgreSQL",
                 "category_code": "smoke",
@@ -48,7 +59,8 @@ def test_agent_run_persists_to_postgresql() -> None:
 
         run_response = client.post(
             f"/api/v1/tickets/{ticket_id}/agent-runs",
-            json={"tenant_id": str(tenant_id)},
+            headers=headers,
+            json={},
         )
         assert run_response.status_code == 201
         run_id = uuid.UUID(run_response.json()["id"])
@@ -56,8 +68,8 @@ def test_agent_run_persists_to_postgresql() -> None:
 
         resume_response = client.post(
             f"/api/v1/agent-runs/{run_id}/resume",
+            headers=headers,
             json={
-                "tenant_id": str(tenant_id),
                 "decision": "approved",
                 "decision_reason": "postgres smoke approval",
             },
@@ -83,6 +95,7 @@ def test_agent_run_persists_to_postgresql() -> None:
             "risk_review",
             "approval_gate",
             "approval_decision",
+            "retrieve_knowledge",
             "generate_summary",
         ]
         assert steps[2].status == "completed"
@@ -95,6 +108,10 @@ def test_agent_run_persists_to_postgresql() -> None:
             run_ids = list(
                 db.scalars(select(AgentRun.id).where(AgentRun.tenant_id == tenant_id)).all()
             )
+            query_ids = list(db.scalars(select(RagQuery.id).where(RagQuery.tenant_id == tenant_id)).all())
+            if query_ids:
+                db.execute(delete(RagRetrievalHit).where(RagRetrievalHit.rag_query_id.in_(query_ids)))
+            db.execute(delete(RagQuery).where(RagQuery.tenant_id == tenant_id))
             if run_ids:
                 db.execute(delete(AgentRunStep).where(AgentRunStep.agent_run_id.in_(run_ids)))
                 db.execute(delete(AgentRun).where(AgentRun.id.in_(run_ids)))
@@ -104,3 +121,11 @@ def test_agent_run_persists_to_postgresql() -> None:
                 db.execute(delete(Ticket).where(Ticket.id.in_(ticket_ids)))
             db.execute(delete(Tenant).where(Tenant.id == tenant_id, Tenant.slug == tenant_slug))
             db.commit()
+
+
+def _auth_headers(tenant_id: uuid.UUID, user_id: uuid.UUID, permissions: str) -> dict[str, str]:
+    return {
+        "X-ServiceMind-Tenant-Id": str(tenant_id),
+        "X-ServiceMind-User-Id": str(user_id),
+        "X-ServiceMind-Permissions": permissions,
+    }

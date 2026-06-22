@@ -129,3 +129,33 @@ def test_search_returns_ranked_hits_and_audits_query() -> None:
     assert result.hits[0].similarity_score is not None
     assert len(repository.rag_queries) == 1
     assert len(repository.rag_retrieval_hits) == 1
+
+
+def test_search_can_mark_hits_used_in_answer_for_agent_citations() -> None:
+    tenant_id = uuid.uuid4()
+    repository = InMemoryKnowledgeRepository()
+    service = KnowledgeService(repository)
+    space = service.create_space(KnowledgeSpaceCreate(tenant_id=tenant_id, name="Support KB"))
+    document = service.import_document(
+        KnowledgeDocumentImport(
+            tenant_id=tenant_id,
+            knowledge_space_id=space.id,
+            title="Refund policy",
+            content_text="Refund requests require an order id.",
+        )
+    )
+    service.generate_document_embeddings(
+        document_id=document.id,
+        payload=KnowledgeDocumentEmbeddingGenerate(tenant_id=tenant_id),
+    )
+
+    result = service.search(
+        KnowledgeSearchRequest(
+            tenant_id=tenant_id,
+            query_text="refund order id",
+            used_in_answer=True,
+        )
+    )
+
+    assert result.hits[0].used_in_answer is True
+    assert repository.rag_retrieval_hits[0].used_in_answer is True
